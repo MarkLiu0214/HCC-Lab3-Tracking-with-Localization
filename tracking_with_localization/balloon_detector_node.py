@@ -48,8 +48,7 @@ class BalloonDetectorNode(Node):
     def image_callback(self, msg):
             """ 使用原始影像進行偵測邏輯 """
             # 如果還沒收到無人機位姿，暫不處理偵測，但可以考慮發布空畫面
-            if self.current_ego_pose is None:
-                return
+            has_pose = self.current_ego_pose is not None
 
             # 1. 轉換原始影像進行 HSV 偵測 
             raw_frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
@@ -84,7 +83,11 @@ class BalloonDetectorNode(Node):
                         X_c = ((u - self.cx) / self.fx) * Z_c
                         Y_c = ((v - self.cy) / self.fy) * Z_c
                         
-                        self.publish_balloon_pose(X_c, Y_c, Z_c, msg.header.stamp)
+                                # 只有有 ego pose 時才發布世界座標
+                        if self.current_ego_pose is not None:
+                            self.publish_balloon_pose(
+                                X_c, Y_c, Z_c, msg.header.stamp
+                            )
 
                         # --- 4. 在底圖上畫紅球框 --- [cite: 255]
                         rx, ry, rw, rh = cv2.boundingRect(max_contour)
